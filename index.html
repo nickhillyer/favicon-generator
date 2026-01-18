@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Icon Generator</title>
+    
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
     <style>
         body {
             font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -12,24 +15,20 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background: #f0f0f2;
+            background: #ffffff;
             color: #1d1d1f;
         }
         .container {
-            background: white;
-            padding: 32px;
-            border-radius: 28px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             text-align: center;
             width: 320px;
         }
-        h2 { margin-top: 0; font-size: 20px; font-weight: 600; }
+        h2 { margin-top: 0; font-size: 24px; font-weight: 600; margin-bottom: 24px; }
         
         #canvas-container {
             width: 180px;
             height: 180px;
-            margin: 0 auto 24px;
-            border-radius: 40px; /* Squircle preview */
+            margin: 0 auto 32px;
+            border-radius: 40px; /* Visual preview of the iOS squircle */
             overflow: hidden;
             box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.1);
             background: white;
@@ -57,8 +56,9 @@
             font-size: 18px;
             box-sizing: border-box;
             outline: none;
+            background: #fbfbfd;
         }
-        input[type="text"]:focus { border-color: #007AFF; }
+        input[type="text"]:focus { border-color: #007AFF; background: #fff; }
 
         .color-row {
             display: grid;
@@ -74,16 +74,23 @@
             align-items: center;
             padding: 0 10px;
             cursor: pointer;
+            background: #fbfbfd;
         }
+        /* Added border to color preview boxes */
         input[type="color"] {
             width: 30px;
             height: 30px;
-            border: none;
+            border: 1px solid #d2d2d7; 
             border-radius: 6px;
             cursor: pointer;
             padding: 0;
             background: none;
+            appearance: none;
+            -webkit-appearance: none;
         }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 5px; }
+
         .color-value {
             margin-left: 8px;
             font-size: 14px;
@@ -119,7 +126,7 @@
 
     <div class="field-group">
         <label>Label (Max 4)</label>
-        <input type="text" id="txt" placeholder="e.g. App" maxlength="4">
+        <input type="text" id="txt" placeholder="e.g. 🚀" maxlength="4" value="🚀">
     </div>
     
     <div class="color-row">
@@ -151,40 +158,39 @@
     const dlBtn = document.getElementById('dl');
 
     function updateHex(id, val) {
-        document.getElementById(id + '-val').textContent = val;
+        document.getElementById(id + '-val').textContent = val.toUpperCase();
     }
 
     function render() {
-        // 1. Fill background (Square for the actual file)
+        // Clear and draw background
         ctx.fillStyle = bgInput.value;
         ctx.fillRect(0, 0, 180, 180);
         updateHex('bg', bgInput.value);
 
-        // 2. Draw Text
-        const val = txtInput.value || "ICON";
+        const val = txtInput.value || "";
         ctx.fillStyle = fgInput.value;
         updateHex('fg', fgInput.value);
         
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         
-        // Dynamic Font Scaling
+        // Detect if input is primarily an emoji
+        const isEmoji = /\p{Emoji}/u.test(val);
+
         let fontSize = 110;
         if (val.length === 2) fontSize = 85;
         if (val.length === 3) fontSize = 65;
         if (val.length === 4) fontSize = 50;
+        if (isEmoji && val.length <= 2) fontSize = 100;
 
-        // Using a bold system font stack
         ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
         
-        // Vertical offset adjustment for visual centering
-        ctx.fillText(val, 90, 92); 
+        // Offset slightly for optical centering
+        ctx.fillText(val, 90, 95); 
     }
 
-    // Event listeners
     [txtInput, bgInput, fgInput].forEach(el => el.oninput = render);
 
-    // Reliable Download
     dlBtn.onclick = () => {
         const link = document.createElement('a');
         link.download = 'apple-touch-icon.png';
