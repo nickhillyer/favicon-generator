@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Icon Generator</title>
     
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    
     <style>
         body {
             font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -28,12 +26,13 @@
             width: 180px;
             height: 180px;
             margin: 0 auto 32px;
-            border-radius: 40px; /* Visual preview of the iOS squircle */
+            border-radius: 40px; /* iOS squircle style */
             overflow: hidden;
             box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.1);
             background: white;
+            transition: border-radius 0.3s ease;
         }
-        canvas { display: block; }
+        canvas { display: block; width: 100%; height: 100%; }
 
         .field-group {
             text-align: left;
@@ -48,17 +47,18 @@
             margin-bottom: 6px;
             margin-left: 4px;
         }
-        input[type="text"] {
+        input[type="text"], select {
             width: 100%;
             padding: 14px;
             border: 1px solid #d2d2d7;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 16px;
             box-sizing: border-box;
             outline: none;
             background: #fbfbfd;
+            appearance: none;
         }
-        input[type="text"]:focus { border-color: #007AFF; background: #fff; }
+        input[type="text"]:focus, select:focus { border-color: #007AFF; background: #fff; }
 
         .color-row {
             display: grid;
@@ -76,7 +76,6 @@
             cursor: pointer;
             background: #fbfbfd;
         }
-        /* Added border to color preview boxes */
         input[type="color"] {
             width: 30px;
             height: 30px;
@@ -125,6 +124,15 @@
     </div>
 
     <div class="field-group">
+        <label>Icon Type</label>
+        <select id="type">
+            <option value="apple" selected>Apple Touch Icon (180x180)</option>
+            <option value="favicon-32">Favicon Standard (32x32)</option>
+            <option value="favicon-16">Favicon Small (16x16)</option>
+        </select>
+    </div>
+
+    <div class="field-group">
         <label>Label (Max 4)</label>
         <input type="text" id="txt" placeholder="e.g. 🚀" maxlength="4" value="🚀">
     </div>
@@ -152,19 +160,39 @@
 <script>
     const canvas = document.getElementById('it');
     const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
     const txtInput = document.getElementById('txt');
     const bgInput = document.getElementById('bg');
     const fgInput = document.getElementById('fg');
+    const typeSelect = document.getElementById('type');
     const dlBtn = document.getElementById('dl');
 
     function updateHex(id, val) {
-        document.getElementById(id + '-val').textContent = val.toUpperCase();
+        const el = document.getElementById(id + '-val');
+        if (el) el.textContent = val.toUpperCase();
     }
 
     function render() {
+        // Handle canvas sizing based on type
+        let size = 180;
+        let borderRadius = "40px";
+        
+        if (typeSelect.value === 'favicon-32') {
+            size = 32;
+            borderRadius = "4px";
+        } else if (typeSelect.value === 'favicon-16') {
+            size = 16;
+            borderRadius = "2px";
+        }
+
+        // Set internal canvas resolution
+        canvas.width = size;
+        canvas.height = size;
+        container.style.borderRadius = borderRadius;
+
         // Clear and draw background
         ctx.fillStyle = bgInput.value;
-        ctx.fillRect(0, 0, 180, 180);
+        ctx.fillRect(0, 0, size, size);
         updateHex('bg', bgInput.value);
 
         const val = txtInput.value || "";
@@ -174,26 +202,29 @@
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         
-        // Detect if input is primarily an emoji
         const isEmoji = /\p{Emoji}/u.test(val);
 
-        let fontSize = 110;
-        if (val.length === 2) fontSize = 85;
-        if (val.length === 3) fontSize = 65;
-        if (val.length === 4) fontSize = 50;
-        if (isEmoji && val.length <= 2) fontSize = 100;
+        // Adjust font sizing relative to canvas size
+        const scale = size / 180;
+        let fontSize = 110 * scale;
+        
+        if (val.length === 2) fontSize = 85 * scale;
+        if (val.length === 3) fontSize = 65 * scale;
+        if (val.length === 4) fontSize = 50 * scale;
+        if (isEmoji && val.length <= 2) fontSize = 100 * scale;
 
-        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
         
         // Offset slightly for optical centering
-        ctx.fillText(val, 90, 95); 
+        ctx.fillText(val, size / 2, (size / 2) + (5 * scale)); 
     }
 
-    [txtInput, bgInput, fgInput].forEach(el => el.oninput = render);
+    [txtInput, bgInput, fgInput, typeSelect].forEach(el => el.oninput = render);
 
     dlBtn.onclick = () => {
         const link = document.createElement('a');
-        link.download = 'apple-touch-icon.png';
+        const filename = typeSelect.value === 'apple' ? 'apple-touch-icon.png' : `favicon-${typeSelect.value.split('-')[1]}.png`;
+        link.download = filename;
         link.href = canvas.toDataURL('image/png');
         document.body.appendChild(link);
         link.click();
